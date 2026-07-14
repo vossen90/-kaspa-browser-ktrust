@@ -4,37 +4,25 @@
 
 ---
 
-## 1. Executive Summary
+## 2. Executive Summary
 
-Kaspa Web is a decentralized internet protocol built natively on top of the Kaspa BlockDAG. It defines an architecture through which domains, content, identity, and trust can exist entirely on-chain and off-chain in a cryptographically verifiable manner, without reliance on centralized hosting providers, certificate authorities, or DNS registries.
+Kaspa Web is a decentralized internet protocol built natively on top of the Kaspa BlockDAG. It establishes an architecture through which domains, content, identity, and trust can exist in a cryptographically verifiable manner, without dependence on centralized hosting providers, certificate authorities, or traditional DNS registrars.
 
-The protocol is composed of a set of interlocking layers: an Inter-Contract Communication (ICC) layer that governs deterministic contract behavior, a Covenant-based domain logic layer, a manifest-driven content-binding mechanism, a distributed storage layer referred to as the Storage Mesh, and a trust layer that provides reputation and safety signaling to end users.
+The protocol is composed of a set of interlocking layers: Inter-Contract Communication (ICC), Covenant v2 domain logic, manifest-driven content binding, a distributed storage layer, and a reputation-based trust framework (KTRUST). Together, these layers allow a domain to be registered, verified, and rendered entirely from on-chain and cryptographically anchored off-chain data.
 
-This document presents Protocol Architecture v2.0, which extends the existing Covenant-based model with a forward path toward fully autonomous Domain-Contracts. This upgrade path depends on a formal Request for Comments (RFC) process and an expanded ICC specification, both of which are necessary preconditions for the advanced functionality described in later sections. Where functionality depends on this future upgrade, it is explicitly marked as such throughout the document.
+This whitepaper describes both the architecture that is operational today and the upgrade path — governed by the protocol's RFC process — toward a future in which domains can act as autonomous, self-governing entities on Kaspa L1.
 
----
+## 3. Vision & Problem Statement
 
-## 2. Vision & Problem Statement
+The traditional web depends on a small number of centralized control points: domain name registrars, certificate authorities, and hosting providers. Each of these represents a point of censorship, seizure, or single-party failure. A domain can be suspended, a certificate revoked, or a host taken offline, independent of the wishes of the domain's rightful owner or its users.
 
-The traditional web is structured around centralized control points: domain registrars, certificate authorities, hosting providers, and content delivery networks. Each of these represents a point of failure, censorship, or unilateral control. A domain can be seized, a certificate can be revoked, a host can remove content, and a registrar can deny renewal — all without the consent of the domain's owner or its users.
-
-Kaspa Web's mission is to remove these centralized control points by anchoring domain ownership, content integrity, and trust signaling directly to Kaspa's BlockDAG. In this model:
-
-- Domain ownership is enforced by consensus rather than by a registrar's database.
-- Content integrity is enforced by cryptographic hashing rather than by a hosting provider's assurances.
-- Trust is enforced by an on-chain reputation mechanism rather than by a centralized certificate authority.
-
-The result is an internet layer in which no single entity can unilaterally alter, seize, or censor a domain that has been correctly registered and maintained by its owner.
-
----
+Kaspa Web's mission is to remove these centralized control points by anchoring domain ownership, content integrity, and trust signaling directly to Kaspa's BlockDAG. Under this model, domains become censorship-resistant and cryptographically verifiable, and their ownership and identity no longer depend on any traditional registrar or intermediary.
 
 ## 4. Technical Architecture v2.0
 
 ### 4.1 ICC — Inter-Contract Communication
 
-Inter-Contract Communication (ICC) is the deterministic contract physics layer underlying Kaspa Web. ICC defines the rules by which a stateless contract (a Covenant-bound UTXO) may transition into a successor state, and by which multiple contracts may compose their behavior atomically within a single transaction context.
-
-ICC does not introduce a general-purpose virtual machine or global mutable state. Instead, it defines a constrained set of primitives — dependency assertions, observation rules, emission rules, and state-transition rules — that allow contracts to reference and react to one another while preserving Kaspa's stateless, UTXO-based validation model.
+ICC defines the deterministic contract physics underlying stateless, UTXO-based contracts on Kaspa. It provides the rules by which contracts compose and interact, enabling atomic composition of contract logic without introducing global mutable state at the consensus layer.
 
 ```mermaid
 flowchart LR
@@ -43,11 +31,11 @@ flowchart LR
     C --> D["Deterministic Execution"]
 ```
 
-**Justification:** Because Kaspa's consensus layer validates transactions statelessly and in parallel across a BlockDAG, any mechanism for inter-contract behavior must avoid introducing global state or non-deterministic ordering. ICC satisfies this constraint by expressing all contract relationships as verifiable conditions evaluated at the level of individual transactions, allowing multiple stateless contracts to compose into higher-order behavior — such as a domain-and-registry relationship — without compromising parallel validation or introducing consensus-level ambiguity.
+Because ICC operates without global state, every interaction between contracts remains deterministic and independently verifiable. This preserves Kaspa's core consensus guarantees while still allowing complex, multi-step interactions between otherwise independent contracts — a prerequisite for any higher-order structure, such as a domain, that needs to combine several discrete pieces of on-chain logic into one coherent identity.
 
 ### 4.2 Covenant v2 — ICC-Powered Domain Logic
 
-Covenant v2 represents a domain's on-chain logic as an ICC-aware contract. Rather than being a static spending condition, a Covenant v2 UTXO carries structured state — classification, manifest binding, and trust metadata — that is enforced and updated according to ICC's deterministic transition rules.
+Covenant v2 is the mechanism through which a domain's classification, content pointer (`manifest_hash`), and trust metadata are bound directly into its on-chain identity. It is implemented as a contract that leverages ICC's deterministic composition rules to enforce which updates are valid and which are not.
 
 ```mermaid
 flowchart TB
@@ -57,11 +45,11 @@ flowchart TB
     B --> E["Trust State"]
 ```
 
-**Justification:** Binding classification, content reference, and trust state directly into the Covenant structure ensures that a domain's identity, its published content, and its reputation are all enforced by the same consensus mechanism, rather than by separate, loosely coupled systems. This reduces the attack surface for spoofing or inconsistency between what a domain claims to be and what it is verifiably bound to on-chain.
+Binding classification, content, and trust state into a single covenant means that a domain's essential properties cannot be altered outside of consensus-enforced rules. Ownership transfer, content updates, and trust adjustments all become subject to the same verifiable logic, rather than being managed by an off-chain database that a third party could alter unilaterally. This is the foundation that today's Kaspa Web already provides, independent of any future upgrade.
 
 ### 4.3 Domain-Contracts (Future L1 Upgrade)
 
-Domain-Contracts represent the long-term evolution of Covenant v2 into fully autonomous, programmable domain entities. Where a Covenant v2 UTXO carries state and classification, a Domain-Contract additionally carries its own logic, defined actor permissions, and enforceable policies — enabling a domain to behave as a self-governing on-chain entity rather than a passive record.
+Where a Covenant v2 UTXO carries state and classification, a Domain-Contract additionally carries its own logic, defined actor permissions, and enforceable policies. This extends a domain from a static, passively-updated record into a self-governing, programmable entity.
 
 ```mermaid
 flowchart LR
@@ -72,46 +60,38 @@ flowchart LR
     B --> F["Policies"]
 ```
 
-**Justification:** A static Covenant is sufficient to bind identity and content, but it cannot express conditional behavior, multi-party governance, or programmable policy enforcement at the domain level. Domain-Contracts extend the model so that a domain can encode its own rules of operation — for example, multi-signature update policies or delegated publishing rights — directly into consensus-enforced logic. This capability requires execution semantics beyond what the current Covenant model supports, and is therefore dependent on the RFC and ICC expansion described in Section 5.
+A Domain-Contract generalizes the covenant model by attaching role-based actor permissions (owners, delegates, publishers, agents) and consensus-enforced policy logic to the domain itself. This allows a domain to encode governance rules — such as multi-signature approval for content changes, or scheduled and conditional updates — directly into its on-chain representation, rather than relying on off-chain coordination. This capability is architecturally specified but not yet active on mainnet; its availability depends on the upgrade path described in Section 5.
 
 ### 4.4 RFC — Protocol Evolution Mechanism
 
-The Request for Comments (RFC) process is the formal specification mechanism through which changes to Kaspa Web's protocol-level behavior are proposed, reviewed, and ratified. An RFC defines the precise semantics, validation rules, and backward-compatibility guarantees of a proposed change before it is considered for activation.
+The RFC (Request for Comment) process is Kaspa Web's formal specification and evolution mechanism. Any change that affects consensus-level behavior — including the activation of Domain-Contracts or expansion of ICC's primitive set — must pass through RFC review before it can be scheduled into a coordinated hard-fork.
 
-**Justification:** Because Domain-Contracts and related capabilities require changes to consensus-level validation logic, they cannot be safely introduced through informal iteration. The RFC process ensures that any expansion of ICC's primitive set, or any new contract semantics introduced at L1, is subject to rigorous technical review, compatibility analysis, and community consensus prior to activation — consistent with how base-layer protocol changes are handled in mature blockchain systems.
-
----
+The RFC process exists to ensure that protocol changes are reviewed for safety, backward compatibility, and alignment with the network's decentralization guarantees before they are activated. This deliberately conservative process means that features described as "future" in this document are not merely product roadmap items — they require community and technical consensus before they can be enabled at the consensus layer.
 
 ## 5. Protocol Upgrade Notice — RFC + ICC Required
 
-Full Domain-Contract functionality requires waiting for the upcoming RFC + ICC upgrade and a coordinated hard-fork.
+**Full Domain-Contract functionality requires waiting for the upcoming RFC + ICC upgrade and a coordinated hard-fork.**
 
-The architecture described in Sections 4.3 and 6.3 depends on protocol-level capabilities that do not yet exist in the current specification. Until the corresponding RFC is formally ratified and the associated ICC expansion is activated through a coordinated hard-fork, Domain-Contracts and the full Storage Mesh incentive layer remain forward-looking design targets rather than deployable functionality. Covenant v2, manifest binding, and the current Storage Layer architecture described in Section 6 remain functional under the existing protocol.
-
----
+Covenant v2, manifest binding, KNS identity, and stateless validation are operational today on Kaspa L1 and do not depend on this upgrade. Domain-Contracts, autonomous domain behaviors, and Storage Mesh incentives are theoretical components that depend on ICC expansion and consensus-level activation, and should be understood as a specified future direction rather than a currently available feature.
 
 ## 6. Storage Layer Architecture v1.1
 
 ### 6.1 On-Chain Binding
 
-Each domain's Covenant carries a `manifest_hash` — a single cryptographic commitment representing the complete set of content associated with that domain. The `manifest_hash` is a Merkle root computed over a structured manifest describing every file belonging to the site, along with per-file hashes and one or more storage pointers for retrieval.
-
-Because only the `manifest_hash` is bound on-chain, the size of a domain's content has no bearing on-chain footprint: a single fixed-size commitment secures an arbitrarily large content set, while retrieval and verification of the underlying files occur off-chain.
+Each domain's content is referenced on-chain through a `manifest_hash`: a cryptographic pointer bound into the domain's Covenant v2 record. The manifest hash allows any retrieved content bundle to be verified against the exact version the domain owner committed to on-chain, regardless of where that content is physically hosted.
 
 ### 6.2 Off-Chain Storage Sources
 
-Content referenced by a manifest may be retrieved from any combination of the following sources:
+Content bundles referenced by a manifest hash may be retrieved from several sources:
 
-- **IPFS** — content-addressed peer-to-peer storage.
-- **Storage Mesh** — Kaspa Web's native distributed hosting layer (see Section 6.3).
-- **Signed Bundles** — pre-packaged, cryptographically signed archives distributed independently of a live network.
-- **HTTP Fallback** — conventional web hosting used as a retrieval path of last resort, still subject to hash verification against the on-chain manifest.
+- IPFS
+- Storage Mesh (future)
+- Signed bundles
+- HTTP fallback
 
-Because every retrieval path is verified against the same `manifest_hash`, no storage source is trusted implicitly; each is merely a candidate location from which verifiably correct content may be obtained.
+Regardless of source, all retrieved content is verified against the on-chain manifest before being rendered, so the integrity guarantee does not depend on trusting any particular storage provider.
 
 ### 6.3 Kaspa Storage Mesh (Future RFC)
-
-The Storage Mesh is a proposed decentralized hosting layer purpose-built for Kaspa Web content. It is designed to provide durable availability for manifest-bound content without relying on a single hosting operator.
 
 ```mermaid
 flowchart LR
@@ -121,7 +101,7 @@ flowchart LR
     A --> E["Incentives"]
 ```
 
-**Justification:** Content addressing alone guarantees integrity but not availability — a manifest hash can verify that retrieved content is correct, but it cannot ensure that a copy of the content exists anywhere to be retrieved. The Storage Mesh addresses this by introducing pinning commitments, replication across independent operators, availability attestations, and an incentive mechanism that rewards operators for maintaining verifiable uptime. As with Domain-Contracts, the incentive and slashing logic underlying this layer requires the RFC-defined ICC expansion described in Section 5 before it can be enforced at the protocol level.
+The Storage Mesh is designed as an incentive-driven replication layer: participants are compensated for pinning and replicating content bundles, which improves availability without requiring a single centralized host. Because this incentive and slashing model requires consensus-level economic primitives, it is categorized as a future component pending RFC ratification, alongside Domain-Contracts.
 
 ### 6.4 Verification Pipeline
 
@@ -136,13 +116,9 @@ sequenceDiagram
     Browser-->>User: Render
 ```
 
-This pipeline ensures that no content is rendered to a user until it has been cryptographically verified against the on-chain commitment associated with the requested domain, regardless of which storage source ultimately served the content.
-
----
+This pipeline ensures that every rendered page is checked against its on-chain commitment before being shown to the user. A browser implementing Kaspa Web never trusts a storage source directly — it only trusts the hash comparison against the Covenant-anchored manifest, which keeps content integrity anchored to consensus rather than to any single storage backend.
 
 ## 7. Security & Integrity Model v2.0
-
-Kaspa Web's security model is layered, with each layer providing an independent guarantee that narrows the space of possible integrity failures as content moves from consensus down to the end user.
 
 ```mermaid
 flowchart TB
@@ -154,31 +130,20 @@ flowchart TB
     L1 --> L2 --> L3 --> L4 --> L5
 ```
 
-Kaspa L1 Consensus establishes the base layer of truth: which domain exists, who owns it, and what its current `manifest_hash` is. The Covenant Registry enforces the structural rules governing how a domain's Covenant may transition between states. Manifest Verification ensures that retrieved content matches its on-chain commitment byte-for-byte. KTRUST provides a reputation signal that reflects a domain's historical behavior and community-reported classification. The Browser Safety Layer is the final checkpoint at which all prior guarantees are surfaced to the end user before content is rendered.
-
-Each layer is independently verifiable, so a failure or compromise at any single layer does not silently propagate — a browser client can, in principle, re-derive every guarantee above it from first principles rather than trusting an intermediary's assertion.
-
----
+Kaspa Web's security model is layered: consensus provides the base guarantee of ordering and finality; the Covenant registry enforces which domain records are valid; manifest verification ensures retrieved content matches what was committed on-chain; KTRUST provides a reputation signal layer on top of that; and the browser safety layer applies user-facing checks before rendering. Each layer depends only on the guarantees of the layer beneath it, so a failure or compromise at the storage or trust layer cannot retroactively alter what has already been committed to consensus.
 
 ## 8. Identity & Ownership v2.0
 
-Domain identity in Kaspa Web is anchored to Kaspa L1 through the Kaspa Name Service (KNS) and is enforced by the same consensus mechanism that secures the underlying UTXO set. Ownership of a domain corresponds directly to control of its associated Covenant, meaning that transfer, renewal, and revocation follow the same cryptographic rules as any other on-chain asset transfer.
-
-Unlike traditional domain registration, there is no renewal authority capable of unilaterally reclaiming a domain outside the rules encoded in its Covenant. A domain's lifecycle — registration, update, transfer, or expiration — is fully determined by protocol rules rather than by the discretion of a registrar.
-
----
+Domain identity in Kaspa Web is established through KNS (Kaspa Name Service) and enforced by consensus rather than by a registrar's database. Once a domain is registered on-chain, its ownership record persists as part of the BlockDAG's history: it can be transferred according to the covenant's rules, but it cannot be revoked, suspended, or seized by any third party, including Kaspa Web's own maintainers. This gives domain owners a form of property right that does not depend on continued goodwill from an intermediary.
 
 ## 9. Governance & Evolution v2.0
 
-Kaspa Web distinguishes between two distinct governance domains:
+Kaspa Web's governance operates on two distinct layers:
 
-- **Protocol Governance** governs changes to the base-layer rules themselves — ICC primitives, Covenant semantics, and consensus-level validation logic. Changes at this level proceed exclusively through the RFC process described in Section 4.4, culminating in coordinated activation where required.
+1. **Protocol Governance (RFC)** — governs consensus-level changes to Kaspa Web itself, including ICC expansion and the activation of Domain-Contracts. Changes at this layer require RFC review and a coordinated hard-fork.
+2. **Application Governance (Domain-Contract policies)** — governs how an individual domain manages its own updates, permissions, and multi-party decisions once Domain-Contracts are active. This layer is scoped entirely to the domain itself and does not require any protocol-level change to modify.
 
-- **Application Governance** governs behavior within the bounds of existing protocol rules — for example, how an individual Domain-Contract's actor permissions or policies are configured by its owner. This layer of governance operates entirely within the flexibility already granted by ratified protocol rules and does not require a protocol-level upgrade.
-
-This separation ensures that experimentation and customization at the application layer can proceed freely, while changes that affect the security or determinism of the base protocol remain subject to rigorous, deliberate review.
-
----
+Separating these two layers means that individual domains can eventually adopt custom governance logic without requiring a change to the underlying protocol, while changes that affect consensus guarantees remain subject to the network's more conservative RFC process.
 
 ## 10. Roadmap v2.0
 
@@ -193,17 +158,13 @@ flowchart LR
     P1 --> P2 --> P3 --> P4 --> P5 --> P6
 ```
 
-- **Phase 1 — Foundation:** Establish Covenant v2, manifest binding, and KNS-based domain identity on existing L1 primitives.
-- **Phase 2 — Browser Core:** Deliver a reference client capable of resolving domains, retrieving manifests, and performing hash verification.
-- **Phase 3 — Trust Layer:** Introduce KTRUST reputation signaling and integrate it into the browser safety layer.
-- **Phase 4 — ICC Expansion:** Formalize and ratify the RFC required to extend ICC primitives beyond current Covenant semantics.
-- **Phase 5 — Domain-Contracts:** Activate autonomous domain logic, actor permissions, and policy enforcement following coordinated hard-fork.
-- **Phase 6 — Storage Mesh:** Deploy incentive-secured pinning and replication as a native decentralized hosting layer.
-
----
+- **Phase 1 — Foundation:** Covenant v2, manifest binding, KNS identity, and stateless validation, forming the operational base layer.
+- **Phase 2 — Browser Core:** Client-side verification of manifests and content bundles against on-chain records.
+- **Phase 3 — Trust Layer:** Introduction of KTRUST reputation signaling across domains.
+- **Phase 4 — ICC Expansion:** RFC-ratified expansion of ICC primitives beyond the current stateless subset.
+- **Phase 5 — Domain-Contracts:** Activation of programmable domain logic, actor permissions, and policy enforcement, contingent on the Phase 4 upgrade and a coordinated hard-fork.
+- **Phase 6 — Storage Mesh:** Activation of incentive-driven replication and availability guarantees for content storage.
 
 ## 11. Future Outlook
 
-Kaspa Web's long-term trajectory is toward an internet layer in which domain ownership, content integrity, and trust are properties of consensus rather than properties of institutional trust. As ICC expands and Domain-Contracts become available, domains can evolve from static, owner-controlled records into programmable entities capable of expressing their own governance, access policies, and multi-party logic — all while remaining anchored to the same stateless, high-throughput consensus that secures the underlying Kaspa network.
-
-This evolution is deliberately incremental. Each phase of the roadmap is designed to preserve backward compatibility with domains and content established under earlier phases, ensuring that the protocol's growth does not come at the cost of continuity for its earliest participants.
+Kaspa Web's long-term direction is a decentralized internet architecture in which domains, content, and trust are all anchored to a single, censorship-resistant BlockDAG. As the RFC process ratifies ICC expansion and Domain-Contracts become active, domains will be able to move beyond static, passively-updated records toward programmable entities capable of enforcing their own governance policies and interacting with one another under consensus-verified rules. Covenant v2 and manifest binding already provide a working foundation for this vision today; the phases described in Section 10 chart the path by which the fuller architecture is intended to be realized.
