@@ -1,253 +1,132 @@
-# 🟢⚫ KASPA Browser 
-### Decentralized Internet Protocol on the Kaspa BlockDAG
-**Whitepaper v4.4 — L1 Native Execution Edition**
+# 🟢⚫ KASPA Browser   
+### Decentralized Internet Protocol  
+**Whitepaper v2.0 — Protocol Architecture & Future Upgrade Path**
 
 ---
 
 ## 1. Executive Summary
 
-Kaspa Web is a decentralized internet protocol built directly on the Kaspa BlockDAG (L1). This edition introduces a native execution layer inside L1 itself, enabling:
+Kaspa Web is a decentralized internet protocol designed to replace the centralized infrastructure of the traditional web with a fully verifiable, cryptographically anchored architecture built on top of the Kaspa BlockDAG. Rather than relying on domain registrars, centralized servers, and opaque trust intermediaries, Kaspa Web establishes ownership, content delivery, and trust as first-class protocol primitives.
 
-- Decentralized digital identities (KNS Domains)
-- Deterministic logic via ICC (Inter-Covenant Communication)
-- Domain-Contracts (stateful actors)
-- A decentralized trust layer (KTRUST)
-- Decentralized storage (IPFS + Storage Mesh)
-- Decentralized indexing (ICC Indexers)
-- On-chain governance contracts
-- Extended VM execution (WASM)
-- Slashing and fraud proofs
-- L1 Data Availability anchoring
-- Parallel execution via GHOSTDAG
+This whitepaper introduces Protocol Architecture v2.0, a structural evolution of the Kaspa Web design that formalizes the role of Inter-Contract Communication (ICC), introduces Covenant v2 as an ICC-powered domain logic layer, and defines a forward path toward autonomous Domain-Contracts. It further specifies a Storage Mesh architecture for decentralized content availability and a Trust Layer v2 for reputation and verification.
 
-This architecture is explicitly framed as **not** an L2, rollup, or sidechain — it is presented as a native L1 execution environment layered on top of Kaspa's stateless covenant model.
+Certain capabilities described in this document — most notably full Domain-Contract autonomy and native Storage Mesh incentives — require a coordinated protocol upgrade through the Request for Comments (RFC) process and the activation of ICC at the consensus layer. Until that upgrade is finalized and activated through a coordinated hard-fork, these components remain part of the protocol's forward specification rather than its currently active feature set.
 
-> **Note on framing:** this is a meaningful architectural claim, not a stylistic one — it means every property described below (statefulness, gas metering, WASM execution) is asserted to live inside L1 consensus itself, rather than in a separate settlement layer. That is a substantially stronger and more difficult engineering claim than the Subnet-based design in the previous edition, and it should be validated against Kaspa's actual, current L1 capabilities before this document is presented as a description of deployed or deployable functionality.
+## 2. Vision & Problem Statement
 
----
+The traditional web is structurally centralized. Domain ownership is mediated by registrars subject to seizure, censorship, and arbitrary policy enforcement. Content is hosted on servers controlled by single entities, creating availability risk and unilateral takedown power. Trust signals — certificates, verification badges, reputation scores — are issued by centralized authorities with no cryptographic accountability to the end user.
 
-## 2. Motivation
+Kaspa Web's mission is to reconstruct these primitives as protocol-level, verifiable constructs:
 
-The traditional web relies on centralized registrars, mutable server-hosted content, private indexers, opaque trust systems, centralized governance, and non-verifiable storage.
+- **Ownership** becomes a cryptographic fact anchored to Kaspa L1, not a database entry controlled by a registrar.
+- **Content delivery** becomes a verifiable retrieval process across a decentralized Storage Mesh, not a request to a single origin server.
+- **Trust** becomes a computable, auditable state derived from on-chain and protocol-level signals, not an opaque third-party attestation.
 
-Kaspa Web replaces these with cryptographic identity, deterministic logic, decentralized storage, decentralized trust, decentralized indexing, decentralized governance, and contract-driven domains.
+The result is an internet layer where the guarantees a user relies on — that a domain belongs to who it claims to, that content has not been tampered with, that a site's trust status reflects real on-chain history — are enforced by the protocol itself rather than by institutional trust.
 
----
+## 3. Technical Architecture v2.0
 
-## 3. Kaspa L1 — Deterministic Base Layer
+### 3.1 ICC — Inter-Contract Communication
 
-Kaspa L1 provides a high-throughput BlockDAG, deterministic validation, stateless covenants, ICC primitives, KNS domain identity, manifest binding, and cryptographic security — with no loops, no recursion, no gas, and no global state.
+ICC (Inter-Contract Communication) is the deterministic contract physics layer underlying Kaspa Web's protocol logic. It defines the rules by which stateless contracts observe one another, compose atomically within a single transaction context, and execute deterministically without relying on external state or off-chain coordination.
 
-Kaspa L1 is the security anchor. The execution layer described in this edition extends L1 without creating a separate chain.
-
-```mermaid
-flowchart TB
-    A["Kaspa L1"] --> B["BlockDAG Consensus"]
-    A --> C["Stateless Covenants"]
-    A --> D["ICC Primitives"]
-    A --> E["KNS Identity"]
-    A --> F["Native Execution Layer"]
-```
-
----
-
-## 4. ICC — Inter-Covenant Communication
-
-ICC is a deterministic dependency mechanism rather than a contract call: a transition is valid only when a specified foreign transition is also present and shaped as expected.
-
-**ICC Primitives:** `id.co_spent()` (require covenant presence), `observes` (inspect foreign covenant inputs/outputs), `emits` (authorized output shape), `become` (successor actor), `actor_type<State>` (dynamic ICC handle).
-
-**ICC Types:** Closed ICC (fixed dependency on known actors) and Open ICC (dynamic dispatch over actor templates).
+ICC is not a messaging system in the conventional sense. It does not queue or relay messages between independent processes. Instead, it defines a set of primitives — observation, co-spending, and atomic composition — that allow multiple contracts to participate in a single validated transaction as though they were physically linked components obeying consistent rules.
 
 ```mermaid
 flowchart LR
-    A["ICC Layer"] --> B["Closed ICC"]
-    A --> C["Open ICC"]
-    B --> D["Fixed Actor Dependency"]
-    C --> E["Dynamic Actor Dispatch"]
+    A["ICC Layer"] --> B["Stateless Contracts"]
+    B --> C["Atomic Composition"]
+    C --> D["Deterministic Execution"]
 ```
 
-**Justification:** Expressing dependencies as a presence-and-shape check rather than a synchronous call keeps covenant logic stateless while still enforcing conditional relationships between actors.
+**Justification:** The ICC Layer establishes the ground rules under which Stateless Contracts operate. Because those contracts hold no persistent internal state between transactions, their behavior is fully defined by their inputs, outputs, and the constraints imposed by ICC at execution time. Atomic Composition ensures that when multiple contracts interact — for example, a domain contract and a trust contract — they either all succeed together or the entire transaction fails, with no partial or inconsistent states possible. This directly yields Deterministic Execution: given a fixed transaction and a fixed set of contract rules, the outcome is fully predictable and independently verifiable by any observer, without requiring trust in a centralized executor.
 
----
+### 3.2 Covenant v2 — ICC-Powered Domain Logic
 
-## 5. Argent — Actor Language
-
-Argent is a high-level language for building covenant applications, providing state definitions, actor ownership, entry transitions, `emits` output declarations, `become` successor logic, ICC primitives, virtual slots, hidden ABI state, and route families.
-
-In this edition, Argent compiles to WASM bytecode executed **inside the L1 execution layer**, rather than on a separate Subnet.
-
-```mermaid
-flowchart LR
-    A["Argent Source"] --> B["Argent Compiler"]
-    B --> C["WASM Bytecode"]
-    C --> D["L1 Execution Layer"]
-```
-
----
-
-## 6. Execution Architecture: Silverscript L1 & Extended L1 VM
-
-Kaspa Web uses a dual-engine execution model, with both engines operating inside L1.
-
-### 6.1 L1 Validation — Silverscript VM
-
-Silverscript is Kaspa's native, Turing-incomplete L1 scripting engine: loop-free, recursion-free, zero-gas, deterministic, and stateless.
-
-**Responsibilities:** validate identity claims (KNS), verify covenant transitions, validate ICC commitments, verify ZK/fraud proofs, and lock/slash collateral via Bonding Covenants.
-
-**Core opcodes:** `OP_COV_INPUT`, `OP_COV_OUTPUT`, `OP_CO_SPENT`, `OP_OBSERVE_INPUT`, `OP_OBSERVE_OUTPUT`, `OP_VALIDATE_TEMPLATE`, `OP_VERIFY_ZK_PROOF` (constant-time ZK verification), `OP_VERIFY_MERKLE_PATH` (loop-free Merkle membership verification).
-
-### 6.2 L1 Execution Layer — Extended VM (WASM)
-
-This is the stateful, gas-metered counterpart described in prior editions as running on a separate Subnet — here it is instead framed as running **within** L1.
-
-**Properties:** Turing-complete, stateful, gas-metered, actor-oriented, parallel execution.
-
-**Responsibilities:** execute Domain-Contracts, manage Storage Mesh logic, run ICC Indexers, process KTRUST reports, execute governance logic, run AI agents, and maintain state roots and validity proofs.
+Covenant v2 is the domain logic layer of Kaspa Web, implemented as an ICC contract. Where the original covenant model enforced simple spending conditions, Covenant v2 extends this into a structured domain object that carries classification metadata, a binding to off-chain content through a manifest hash, and a trust state that reflects the domain's verified history.
 
 ```mermaid
 flowchart TB
-    subgraph L1["Kaspa L1"]
-        subgraph SV["Silverscript VM"]
-            A1["Validate KNS Claims"]
-            A2["Verify Covenant Transitions"]
-            A3["Verify ZK / Fraud Proofs"]
-            A4["Lock / Slash Bonds"]
-        end
-        subgraph EVM["Extended VM (WASM)"]
-            B1["Domain-Contracts"]
-            B2["Storage Mesh"]
-            B3["ICC Indexers"]
-            B4["Governance & Trust Logic"]
-        end
-        EVM -- "State Roots / Proofs" --> SV
-    end
+    A["Domain"] --> B["Covenant v2"]
+    B --> C["Classification"]
+    B --> D["manifest_hash"]
+    B --> E["Trust State"]
 ```
 
-**Justification:** Framing the Extended VM as part of L1 rather than as an external Subnet is intended to preserve a single unified security domain — but it also means the Extended VM's gas-metered, stateful, Turing-complete execution must coexist with, and not compromise, the loop-free and stateless guarantees that define Silverscript and Kaspa's base-layer consensus. This is the central engineering claim of this edition and the one most in need of independent verification.
+**Justification:** Representing a Domain as a Covenant v2 object allows all of a domain's essential properties to be enforced by the same deterministic rules that govern any other on-chain covenant. Classification allows the protocol and downstream applications to reason about the type and purpose of a domain without external lookups. The manifest_hash field creates a cryptographic binding between the on-chain covenant and the off-chain content it represents, so that any change in content is immediately detectable as a hash mismatch. Trust State allows reputation and verification history to travel with the domain itself, rather than being reconstructed from external, potentially inconsistent sources. Together, these fields make the domain a self-describing, self-verifying unit within the protocol.
 
----
+### 3.3 Domain-Contracts (Future L1 Upgrade)
 
-## 7. Domain-Contracts
-
-Domain-Contracts are autonomous actors running inside the L1 execution layer, providing domain ownership, permissions, governance, storage policies, trust integration, indexing integration, and support for extensions and plugins.
-
-Domain-Contracts require ICC expansion, the Extended VM, hidden ABI state, route-family commitments, and hard-fork activation.
+Domain-Contracts represent the forward-looking evolution of Covenant v2 into fully autonomous, stateful contract objects. Where Covenant v2 is a relatively static binding of classification, content hash, and trust state, a Domain-Contract is designed to hold its own logic, internal state, a defined set of authorized actors, and configurable policies governing its behavior.
 
 ```mermaid
 flowchart LR
     A["KNS Domain"] --> B["Domain-Contract"]
-    B --> C["Ownership & Permissions"]
-    B --> D["Governance"]
-    B --> E["Storage Policy"]
-    B --> F["Trust Integration"]
+    B --> C["Logic"]
+    B --> D["State"]
+    B --> E["Actors"]
+    B --> F["Policies"]
 ```
 
----
+**Justification:** Elevating a KNS Domain into a full Domain-Contract allows domain owners to encode governance and operational rules directly at the protocol level rather than through off-chain agreements or centralized administration panels. Logic defines the domain's programmable behavior; State persists the domain's evolving condition across transactions; Actors formally enumerate who is authorized to act on the domain's behalf and under what constraints; and Policies allow fine-grained, auditable rules — such as storage requirements, delegation limits, or transfer conditions — to be enforced automatically by the protocol. This architecture requires consensus-level support for stateful ICC execution, which is why it is specified here as a future L1 upgrade rather than a currently active capability.
 
-## 8. Trust Layer (KTRUST) — Slashing Model
+### 3.4 RFC — Protocol Evolution Mechanism
 
-1. **Bond Locking (L1):** validators and storage providers lock KAS inside an L1 Bonding Covenant.
-2. **Challenge Window:** the execution layer detects misbehavior.
-3. **Fraud Proof Submission (L1):** a verifier submits a ZK or deterministic fraud proof.
-4. **Automatic Slashing (L1):** Silverscript verifies the proof; the bond is burned or awarded.
+The Request for Comments (RFC) process is the formal mechanism through which Kaspa Web's protocol specification evolves. An RFC documents a proposed change to consensus rules, ICC primitives, or protocol-level data structures in sufficient technical detail to be implemented, reviewed, and independently verified by node operators and protocol contributors before activation.
+
+**Justification:** A protocol that governs ownership, trust, and content integrity for a decentralized internet cannot evolve through informal or unilateral changes. The RFC process ensures that any modification to core primitives — including the activation of stateful ICC required for Domain-Contracts — is subject to open technical review and requires broad coordination before it is deployed. This preserves the deterministic, trust-minimized guarantees that the rest of the protocol depends on.
+
+## 4. Protocol Upgrade Notice — RFC + ICC Required
+
+Full Domain-Contract functionality requires waiting for the upcoming RFC + ICC upgrade and a coordinated hard-fork.
+
+Until this upgrade is specified, reviewed, and activated across the network, Domain-Contracts as described in Section 3.3 remain a forward specification. Current protocol behavior operates through Covenant v2 as described in Section 3.2, which provides classification, content binding, and trust state without requiring stateful consensus-level execution.
+
+## 5. Storage Layer Architecture v1.1
+
+### 5.1 On-Chain Binding
+
+Each domain's content is bound to its on-chain covenant through a manifest_hash: a cryptographic digest of the content manifest describing the structure, location pointers, and integrity hashes of the domain's off-chain content. This binding is the sole on-chain footprint required to verify that retrieved content matches what the domain owner has committed to.
+
+### 5.2 Off-Chain Storage Sources
+
+Content referenced by a manifest_hash may be retrieved from multiple off-chain sources, including:
+
+- IPFS
+- Storage Mesh (see 5.3)
+- Signed Bundles
+- HTTP fallback
+
+### 5.3 Kaspa Storage Mesh (Future RFC)
+
+The Storage Mesh is a proposed decentralized storage network purpose-built for Kaspa Web content, providing pinning, replication, availability guarantees, and economic incentives for storage providers.
+
+```mermaid
+flowchart LR
+    A["Storage Mesh"] --> B["Pinning"]
+    A --> C["Replication"]
+    A --> D["Availability"]
+    A --> E["Incentives"]
+```
+
+**Justification:** Pinning ensures that content is not garbage-collected by storage nodes prematurely. Replication distributes copies across multiple independent providers, removing single points of failure. Availability mechanisms allow the network to verify, at any time, that committed content can actually be retrieved rather than merely assumed to exist. Incentives align the economic interests of storage providers with the network's need for durable content availability, converting storage from a best-effort courtesy into an economically enforced guarantee. This architecture is specified as a future RFC because its incentive and slashing mechanisms depend on protocol-level primitives not yet activated.
+
+### 5.4 Verification Pipeline
 
 ```mermaid
 sequenceDiagram
-    participant V as Validator/Provider
-    participant E as Execution Layer
-    participant R as Reporter
-    participant L1 as L1 Bonding Covenant
-    V->>L1: Lock bond
-    E->>E: Detect misbehavior
-    R->>L1: Submit fraud/ZK proof
-    L1->>L1: Verify proof (Silverscript)
-    L1-->>R: Slash bond / reward reporter
+    User->>Browser: Open domain
+    Browser->>Covenant: Query manifest_hash
+    Covenant-->>Browser: Return metadata
+    Browser->>Storage: Fetch content
+    Storage-->>Browser: Content bundle
+    Browser->>Browser: Verify hashes
+    Browser-->>User: Render
 ```
 
----
+## 6. Security & Integrity Model v2.0
 
-## 9. Storage Layer — IPFS + Storage Mesh
-
-IPFS provides decentralized content addressing without persistence guarantees. The Storage Mesh, running in the L1 execution layer, adds incentivized pinning, replication contracts, availability proofs, slashing for data loss, storage governance, and treats storage providers as actors.
-
----
-
-## 10. ICC Indexers
-
-Indexers are actors inside the L1 execution layer, responsible for domain registry scanning, manifest mapping, trust mapping, storage mapping, and deterministic queries.
-
-**Security & DA integration:** indexers reconstruct state from DA payloads, detect fraud, and submit fraud proofs. They earn KAS per query and are slashed for incorrect results.
-
----
-
-## 11. Governance & Voting
-
-Governance contracts provide proposal creation, voting execution, quorum enforcement, cooling periods, and Domain-Contract updates.
-
----
-
-## 12. User Roles
-
-Visitor, Reader, Reporter, Verifier, Trust Participant, Storage Provider, Agent.
-
----
-
-## 13. Domain Owner Roles
-
-Owner, Admin, Controller, Storage Controller, Trust Delegate, Governance Participant.
-
----
-
-## 14. L1 Execution Partitions (Native Subnets)
-
-Execution partitions provide stateful actors, parallel execution, multi-actor logic, storage contracts, trust contracts, governance contracts, indexers, and AI agents — all inside L1.
-
-### State Verification & Data Availability (DA)
-
-- State roots and compressed diffs are committed to L1 payloads.
-- Verifiers can reconstruct state even under withholding attempts.
-- Fraud proofs — and therefore slashing — remain enforceable.
-
-### Performance Guarantees
-
-To prevent round-trip-time degradation: DA commits are batched into epochs, state diffs are compressed, and a storage fee premium discourages state bloat.
-
-```mermaid
-flowchart TB
-    A["Execution Partition State"] --> B["State Root + Diffs"]
-    B --> C["Epoch Batching"]
-    C --> D["Compression"]
-    D --> E["L1 DA Payload"]
-    E --> F["Verifier Reconstruction"]
-    F --> G["Fraud Proof Submission"]
-    G --> H["L1 Slashing"]
-```
-
-**Justification:** Calling these "Native Subnets" rather than external Subnets is a naming choice with real consequences: it asserts that partitioning and parallel execution happen under the same consensus and DA guarantees as the rest of L1, rather than in an environment that merely reports back to L1. That distinction should be explicit anywhere this document is used to describe actual system behavior, since it is the difference between one security domain and two.
-
----
-
-## 15. Concurrency Model — Hybrid Architecture
-
-**L1 Concurrency (UTXO Parallelism):** used for KNS, stateless ICC, and covenant transitions, via UTXO splitting, UTXO chaining, and parallel validation through GHOSTDAG.
-
-**Execution Layer Concurrency (Actor Model):** used for Domain-Contracts, Storage Mesh, indexers, governance, and trust logic, via partitioned actors, virtual slots, read/write sets, parallel reads, and serialized writes.
-
----
-
-## 16. Tokenomics, Gas & Slashing
-
-**L1 Gas:** none — fee equals transaction size.
-
-**Execution Layer Gas:** charged for WASM cycles, actor transitions, DA footprint, and storage footprint.
-
-**Slashing:** bonds locked in L1, fraud proofs submitted to L1, verified by Silverscript, slashing applied automatically.
-
----
-
-## 17. Security Model
+Kaspa Web's security model is structured as a layered stack, in which each layer's guarantees depend on the integrity of the layer beneath it.
 
 ```mermaid
 flowchart TB
@@ -256,46 +135,32 @@ flowchart TB
     L3["Manifest Verification"]
     L4["KTRUST"]
     L5["Browser Safety Layer"]
-    L6["Execution Layer Guarantees"]
-    L7["L1 Data Availability Anchoring"]
     L1 --> L2 --> L3 --> L4 --> L5
-    L1 --> L7 --> L6
 ```
 
----
+Kaspa L1 Consensus anchors all higher-layer guarantees in the security of the underlying BlockDAG. The Covenant Registry provides an authoritative, on-chain record of domain ownership and classification. Manifest Verification ensures that retrieved content cryptographically matches what the domain owner has committed to on-chain. KTRUST aggregates verified signals into a computable trust state for the domain. The Browser Safety Layer is the final client-side enforcement point, translating the verified trust state and manifest integrity into concrete warnings, restrictions, or confirmations presented to the end user.
 
-## 18. Roadmap
+## 7. Identity & Ownership v2.0
+
+Domain identity within Kaspa Web is anchored permanently to the Kaspa L1 covenant that represents it. Ownership is a cryptographic fact, provable by control of the relevant keys, rather than a record held by a third-party registrar. A domain's lifecycle — registration, transfer, renewal, and, where applicable, expiration or reclamation — is governed entirely by the covenant's on-chain rules, ensuring that ownership history is fully auditable and independent of any centralized authority's continued cooperation.
+
+## 8. Governance & Evolution v2.0
+
+Kaspa Web distinguishes between protocol governance and application governance. Protocol governance concerns changes to the core specification itself — consensus rules, ICC primitives, and covenant structures — and proceeds through the RFC process described in Section 3.4. Application governance concerns decisions made within an individual domain or service built on top of the protocol, such as content moderation policies or delegated administration, and is governed by the rules encoded in that domain's own covenant or, in the future, Domain-Contract. This separation ensures that the protocol's core guarantees remain stable and narrowly scoped, while individual applications retain full flexibility to define their own governance models on top of it.
+
+## 9. Roadmap v2.0
 
 ```mermaid
 flowchart LR
-    P1["Phase 1 — Stateless ICC (complete)"]
-    P2["Phase 2 — Browser Core (complete)"]
-    P3["Phase 3 — Trust Layer (partial)"]
-    P4["Phase 4 — ICC Expansion (in progress)"]
-    P5["Phase 5 — Domain-Contracts (in progress)"]
-    P6["Phase 6 — L1 Execution Layer (future)"]
+    P1["Phase 1 — Foundation"]
+    P2["Phase 2 — Browser Core"]
+    P3["Phase 3 — Trust Layer"]
+    P4["Phase 4 — ICC Expansion"]
+    P5["Phase 5 — Domain-Contracts"]
+    P6["Phase 6 — Storage Mesh"]
     P1 --> P2 --> P3 --> P4 --> P5 --> P6
 ```
 
----
+## 10. Future Outlook
 
-## 19. Future Outlook
-
-Kaspa Web is designed to evolve into a decentralized internet stack in which domains are contracts, websites are trust-minimized, storage and indexing are decentralized, governance is open, ICC underlies all logic, the L1 execution layer provides scalable computation, and Data Availability anchoring underwrites fraud-proof, censorship-resistant verification — anchored throughout by the Kaspa BlockDAG.
-
----
-
-## 20. Node Responsibilities in the Kaspa Native Execution Layer
-
-Kaspa nodes serve as the unified backbone of the decentralized web stack, combining the following roles:
-
-- **L1 Consensus Validator** — validate blocks, transactions, covenants, ICC, DA payloads, and fraud proofs; enforce slashing.
-- **L1 Execution Engine** — execute WASM; run Domain-Contracts, Storage Mesh, Indexers, Governance, and the Trust Layer.
-- **Data Availability Provider** — publish state roots and diffs, store historical state, and provide data for fraud proofs.
-- **Bonding Covenant Enforcer** — verify collateral, verify ZK proofs and Merkle paths, and slash malicious actors.
-- **ICC Router** — route actor transitions and validate route families and dependencies.
-- **Storage Mesh Node** — store content, prove availability, earn rewards, and risk slashing.
-- **Indexer Node** — index domains, manifests, trust, and storage; provide deterministic queries.
-- **Governance Node** — vote, propose, validate outcomes, and execute governance logic.
-
-**Justification:** Consolidating all of these roles into a single node type is a strong claim about hardware and bandwidth requirements — a node performing consensus validation, WASM execution, DA storage, and indexing simultaneously will have materially higher resource requirements than a validator in the stateless-L1 design described in earlier sections. That trade-off (decentralization/accessibility of node operation vs. unified execution) is worth stating explicitly rather than leaving implicit.
+The long-term trajectory of Kaspa Web is a fully decentralized internet stack in which ownership, content integrity, trust, and governance are all enforced as protocol-level guarantees rather than institutional assurances. As ICC expansion and the Domain-Contract upgrade path are formalized through the RFC process and activated through coordinated protocol upgrades, the network moves from its current foundation — verifiable ownership and content binding through Covenant v2 — toward a state in which domains operate as autonomous, self-governing contract objects backed by a resilient, incentive-aligned Storage Mesh. This trajectory positions Kaspa Web as infrastructure for an internet whose foundational guarantees are cryptographic rather than institutional.
