@@ -164,3 +164,56 @@ flowchart LR
 ## 10. Future Outlook
 
 The long-term trajectory of Kaspa Web is a fully decentralized internet stack in which ownership, content integrity, trust, and governance are all enforced as protocol-level guarantees rather than institutional assurances. As ICC expansion and the Domain-Contract upgrade path are formalized through the RFC process and activated through coordinated protocol upgrades, the network moves from its current foundation — verifiable ownership and content binding through Covenant v2 — toward a state in which domains operate as autonomous, self-governing contract objects backed by a resilient, incentive-aligned Storage Mesh. This trajectory positions Kaspa Web as infrastructure for an internet whose foundational guarantees are cryptographic rather than institutional.
+
+
+About This Document — Vision, Foundations & Feasibility Disclaimer
+Kaspa Web is a forward‑looking architectural vision.  
+It describes a potential evolution of the Kaspa ecosystem that builds on
+ICC, Covenants, SilverScript, DA anchoring, and future protocol extensions
+such as Execution Partitions, Stateful Actors, WASM execution, decentralized
+indexing, storage layers, and trust mechanisms.
+
+The foundational components required for this vision do exist today in Kaspa.  
+These include:
+
+the high‑throughput BlockDAG
+
+stateless validation
+
+zero‑gas fee model
+
+covenant‑based spending rules
+
+SilverScript
+
+ICC primitives (RFC)
+
+manifest binding
+
+KNS identity layer
+
+pruning‑friendly DA anchoring
+
+These elements form a real, working base layer that makes the proposed
+architecture feasible in principle and compatible with Kaspa’s core design.
+
+However, the advanced mechanisms described in this document — including
+WASM execution, state commitments, execution partitions, storage mesh,
+trust layer, and decentralized indexing — are not implemented in the
+current protocol.  
+They represent future extensions that require:
+
+deep feasibility analysis
+
+extensive research and prototyping
+
+multi‑phase protocol upgrades
+
+validation by Kaspa Core developers
+
+long‑term engineering effort
+
+This whitepaper should therefore be understood as a vision document,
+not a specification of existing functionality.
+It outlines what could be built on top of Kaspa’s proven foundations,
+pending rigorous feasibility studies and community consensus.
